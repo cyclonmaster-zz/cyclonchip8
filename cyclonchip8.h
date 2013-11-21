@@ -1,17 +1,5 @@
-class chip8 {
-	public:
-		chip8();
-		
-		bool drawFlag;
-
-		void emulateCycle();
-		void debugRender();
-		bool loadApplication(const char * filename);		
-
+class cyclonchip8 {
 // Chip8
-		unsigned char  gfx[64 * 32];	// Total amount of pixels: 2048
-		unsigned char  key[16];			
-
 	private:	
 		unsigned short opcode;			// Current opcode		
 		unsigned char  V[16];			// V-regs (V0-VF), general purpose registers & VF carry flag
@@ -25,5 +13,21 @@ class chip8 {
 		unsigned char  delay_timer;		// Delay timer
 		unsigned char  sound_timer;		// Sound timer		
 
+	public:
+		//unsigned char  gfx[64 * 32];	// Total amount of pixels: 2048
+		//unsigned char gfx[128][64];
+		unsigned char  gfx[128 * 64];
+		unsigned char  key[16];	
+		
+		bool stop;						// for 00FD opcode
+
+		cyclonchip8();
+		
+		bool drawFlag;
+
 		void init();
+		void debugRender();
+		bool loadApplication(const char * filename);
+		void emulateCycle();
+		void decreaseTimers();
 };
