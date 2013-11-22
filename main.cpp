@@ -4,9 +4,9 @@
 /*###################################################*/
 
 #include <iostream>
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <fstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fstream>
 #include <time.h>
 #include "cyclonchip8.h"
 #include "SDL.h"
@@ -43,7 +43,8 @@ using namespace std;
 	cyclonchip8::cyclonchip8()
 	{
 		init();
-		// Clear screen once		
+		
+		// Clear screen once
 		drawFlag = true;
 		
 		srand (time(NULL));
@@ -51,9 +52,13 @@ using namespace std;
 	
 	void cyclonchip8::init()
 	{
-		// Clear display, Total amount of pixels: 2048
+		//Clear display, Total amount of pixels: 2048
 		for(int i = 0; i < 2048; ++i)
-			gfx[i] = 0;		
+			gfx[i] = 0;
+
+		//for (int y = 0; y < 64; y++)
+		//	for (int x = 0; x < 128; x++)
+		//		gfx[x][y] = 0;
 		
 		opcode	= 0;			// Reset current opcode
 		
@@ -72,7 +77,12 @@ using namespace std;
 		// Clear memory, Memory (size = 4k)
 		for(int i = 0; i < 4096; ++i)
 			memory[i] = 0;
-			
+		
+		//tambah pixel_
+		//SDL_FreeSurface(pixel_);
+		//pixel_ = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0);
+		//SDL_FillRect(pixel_, NULL, SDL_MapRGB(pixel_->format, 255, 255, 255));
+
 		// Reset timers
 		delay_timer = 0;
 		sound_timer = 0;
@@ -85,26 +95,65 @@ using namespace std;
 			
 		//di move ke main
 		// Clear screen once
-		//drawFlag = true;
+//		drawFlag = true;
 		
-		//srand (time(NULL));
-		stop = false;
+//		srand (time(NULL));
+		//stop = false;
 	}
+
+//untuk grapfik sprite
+//void cyclonchip8::drawSprite(unsigned char X, unsigned char Y, unsigned char N)
+//{	
+//	V[0xF] = 0;
+//			if (N == 0) N = 16;
+//			for (int yline = 0; yline < N; yline++)
+//			{
+//				unsigned char data = memory[I + yline];
+//				for (int xpix = 0; xpix < 8; xpix++)
+//				{
+//					if((data & (0x80 >> xpix)) != 0)
+//					{
+//						if ((V[X] + xpix) < 64 && (V[Y] + yline) < 32 && (V[X] + xpix) >= 0 && (V[Y] + yline) >= 0)
+//						{
+//							if (gfx[(V[X] + xpix)*2][(V[Y] + yline)*2] == 1) V[0xF] = 1;
+//							gfx[(V[X] + xpix)*2][(V[Y] + yline)*2] ^= 1;
+//							gfx[(V[X] + xpix)*2 + 1][(V[Y] + yline)*2] ^= 1;
+//							gfx[(V[X] + xpix)*2][(V[Y] + yline)*2 + 1] ^= 1;
+//							gfx[(V[X] + xpix)*2 + 1][(V[Y] + yline)*2 + 1] ^= 1;
+//						}
+//					}
+//				}
+//			}
+//}
 
 void cyclonchip8::emulateCycle()
 {
+	//Opcode table:
+	//CHIP-8 has 35 opcodes, which are all two bytes long. The most significant byte is stored first.
+	//The opcodes are listed below, in hexadecimal and with the following symbols:
+
+	//NNN: address
+	//NN: 8-bit constant
+	//N: 4-bit constant
+	//X and Y: 4-bit register identifier
+	
 	// Fetch opcode
 	opcode = memory[pc] << 8 | memory[pc + 1];
 	
 	// Process opcode
 	switch(opcode & 0xF000)
 	{		
+		//0NNN	Calls RCA 1802 program at address NNN.
 		case 0x0000:
 			switch(opcode & 0x000F)
 			{
 				case 0x0000: // 0x00E0: Clears the screen
 					for(int i = 0; i < 2048; ++i)
 						gfx[i] = 0x0;
+				//	for (int i = 0; i < 64; i++)
+				//		for (int j = 0; j < 128; j++)
+				//			gfx[i][j] = 0;					
+
 					drawFlag = true;
 					pc += 2;
 				break;
@@ -254,6 +303,7 @@ void cyclonchip8::emulateCycle()
 					 // I value doesn't change after the execution of this instruction. 
 					 // VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, 
 					 // and to 0 if that doesn't happen
+		//draw sprite asal
 		{
 			unsigned short x = V[(opcode & 0x0F00) >> 8];
 			unsigned short y = V[(opcode & 0x00F0) >> 4];
@@ -276,10 +326,12 @@ void cyclonchip8::emulateCycle()
 					}
 				}
 			}
-						
+					
 			drawFlag = true;			
 			pc += 2;
 		}
+		//draw sprite lain
+		//drawSprite(((opcode & 0x0F00)>>8), ((opcode & 0x00F0)>>4), (opcode & 0x000F));
 		break;
 			
 		case 0xE000:
@@ -437,54 +489,79 @@ void cyclonchip8::debugRender()
 
 bool cyclonchip8::loadApplication(const char * filename)
 {
-	init();
-	printf("Loading: %s\n", filename);
-		
-	// Open file
-	FILE * pFile = fopen(filename, "rb");
-	if (pFile == NULL)
+	ifstream file(filename, ios::in | ios::binary | ios::ate);
+	if (file.is_open())
 	{
-		fputs ("File error", stderr); 
-		return false;
+		ifstream::pos_type size;
+		size = file.tellg();
+		if (size > 0x0FFF - 0x200)
+		{
+			cerr << "Error: file '" << filename << "' is too large." << endl;
+			return false;
+		}
+		file.seekg(0, ios::beg);
+		file.read(reinterpret_cast<char*>(&memory[0x200]), size);
+		file.close();
+		
+		cout << "File '" << filename << "' loaded." << endl;
+		return true;
 	}
+
+	cerr << "Error: unable to open file '" << filename << "'" << endl;
+	return false;
+}
+
+//fileopen asal
+//bool cyclonchip8::loadApplication(const char * filename)
+//{
+//	init();
+//	printf("Loading: %s\n", filename);
+//		
+	// Open file
+//	FILE * pFile = fopen(filename, "rb");
+//	if (pFile == NULL)
+//	{
+//		fputs ("File error", stderr); 
+//		return false;
+//	}
 
 	// Check file size
-	fseek(pFile , 0 , SEEK_END);
-	long lSize = ftell(pFile);
-	rewind(pFile);
-	printf("Filesize: %d\n", (int)lSize);
+//	fseek(pFile , 0 , SEEK_END);
+//	long lSize = ftell(pFile);
+//	rewind(pFile);
+//	printf("Filesize: %d\n", (int)lSize);
 	
 	// Allocate memory to contain the whole file
-	char * buffer = (char*)malloc(sizeof(char) * lSize);
-	if (buffer == NULL) 
-	{
-		fputs ("Memory error", stderr); 
-		return false;
-	}
+//	char * buffer = (char*)malloc(sizeof(char) * lSize);
+//	if (buffer == NULL) 
+//	{
+//		fputs ("Memory error", stderr); 
+//		return false;
+//	}
 
 	// Copy the file into the buffer
-	size_t result = fread (buffer, 1, lSize, pFile);
-	if (result != lSize) 
-	{
-		fputs("Reading error",stderr); 
-		return false;
-	}
+//	size_t result = fread (buffer, 1, lSize, pFile);
+//	if (result != lSize) 
+//	{
+//		fputs("Reading error",stderr); 
+//		return false;
+//	}
 
 	// Copy buffer to Chip8 memory
-	if((4096-512) > lSize)
-	{
-		for(int i = 0; i < lSize; ++i)
-			memory[i + 512] = buffer[i];
-	}
-	else
-		printf("Error: ROM too big for memory");
+//	if((4096-512) > lSize)
+//	{
+//		for(int i = 0; i < lSize; ++i)
+//			memory[i + 512] = buffer[i];
+//	}
+//	else
+//		printf("Error: ROM too big for memory");
 	
 	// Close file, free buffer
-	fclose(pFile);
-	free(buffer);
+//	fclose(pFile);
+//	free(buffer);
 
-	return true;
-}
+//	return true;
+//}
 
 /*###################################################*/
 /*SDL PART                                           */
@@ -504,7 +581,9 @@ bool gfx_init()
 
 	SDL_WM_SetCaption("cyclonchip8-SDL", "cyclonchip8-SDL");
 	
-	if((screen_surf = SDL_SetVideoMode(256, 128, 24, SDL_HWSURFACE | SDL_DOUBLEBUF)) == NULL) {
+	//saiz screen emulator
+	//if((screen_surf = SDL_SetVideoMode(256, 128, 24, SDL_HWSURFACE | SDL_DOUBLEBUF)) == NULL) {
+	if((screen_surf = SDL_SetVideoMode(640, 320, 32, SDL_HWSURFACE | SDL_DOUBLEBUF)) == NULL) {
 		return false;
 	}
 	
@@ -513,21 +592,44 @@ bool gfx_init()
 
 void draw()
 {
-	SDL_FillRect(screen_surf, NULL, 0x000000);
-	int t = 0;
-	for (int y = 0; y < 64; y++)
-		for (int x = 0; x < 128; x++)
-		{
-			if (emu.screen[x][y] == 1)
-			{
-				SDL_Rect dest;
-				dest.x = x*2;
-				dest.y = y*2;
-				dest.w = 2;
-				dest.h = 2;
-				SDL_FillRect(screen_surf, &dest, SDL_MapRGB(screen_surf->format, 0xff, 0xff, 0xff));
-			}
-		}
+	//SDL_FillRect(screen_surf, NULL, 0x000000);
+	//int t = 0;
+	//for (int y = 0; y < 64; y++)
+	//	for (int x = 0; x < 128; x++)
+	//	{
+			//if (emu.gfx[x][y] == 1)
+	//		if (emu.gfx[y * 64 + x] == 1)
+	//		{
+	//			SDL_Rect dest;
+	//			dest.x = x*2;
+	//			dest.y = y*2;
+	//			dest.w = 2;
+	//			dest.h = 2;
+	//			SDL_FillRect(screen_surf, &dest, SDL_MapRGB(screen_surf->format, 0xff, 0xff, 0xff));
+	//		}
+	//	}
+
+	//code draw lain
+	    SDL_FillRect(screen_surf, NULL, SDL_MapRGB(screen_surf->format, 0, 0, 0));
+
+    SDL_Rect pixel_pos;
+
+    for (size_t x = 0; x < 64; ++x)
+    {
+        for (size_t y = 0; y < 32; ++y)
+        {
+            if (emu.gfx[y * 64 + x] == 1)
+            {
+                pixel_pos.x = x * 10;
+                pixel_pos.y = y * 10;
+
+                //SDL_BlitSurface(pixel_, NULL, screen_surf, &pixel_pos);				
+            }
+        }
+    }
+
+    SDL_Flip(screen_surf);
+	//code draw lain tamat
 }
 
 void handle_input(SDL_Event &event)
@@ -610,7 +712,7 @@ int main(int argc, char *argv[])
 			}
 			//tukar2 mode chip8 & superchip8
             //if (emu.mode == 0)
-            //    cycles_per_second = 10; // execute 600 opcodes per second
+                cycles_per_second = 10; // execute 600 opcodes per second
             //else
             //    cycles_per_second = 30; // 1800 opcodes per second
 
@@ -637,6 +739,6 @@ int main(int argc, char *argv[])
 	}
 	
 	SDL_FreeSurface(screen_surf);
-	SDL_Quit;
+	SDL_QUIT;
 	return 0;
 }

@@ -1,3 +1,5 @@
+#include <string>
+
 class cyclonchip8 {
 // Chip8
 	private:	
@@ -11,12 +13,13 @@ class cyclonchip8 {
 		unsigned char  memory[4096];	// Memory (size = 4k)		
 				
 		unsigned char  delay_timer;		// Delay timer
-		unsigned char  sound_timer;		// Sound timer		
+		unsigned char  sound_timer;		// Sound timer
+		//void drawSprite(unsigned char X, unsigned char Y, unsigned char N);
 
 	public:
-		//unsigned char  gfx[64 * 32];	// Total amount of pixels: 2048
+		unsigned char  gfx[64 * 32];	// Total amount of pixels: 2048
 		//unsigned char gfx[128][64];
-		unsigned char  gfx[128 * 64];
+		//unsigned char  gfx[128 * 64];
 		unsigned char  key[16];	
 		
 		bool stop;						// for 00FD opcode

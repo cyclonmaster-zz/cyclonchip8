@@ -1,0 +1,4 @@
+cyclonchip8-SDL 
+Copyright (C) cyclonmaster <cyclonmaster@gmail.com>
+
+File 'invaders.c8' loaded.
